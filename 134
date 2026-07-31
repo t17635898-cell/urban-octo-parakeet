@@ -1,0 +1,896 @@
+--// Lynoria.v1
+--// 1. 필수 서비스 조기 선언 (AC Bypass용)
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+--//======================================================================================--
+--// 🛡️ 자동 실행 1: AC Bypass (안티치트 우회)
+--//======================================================================================--
+local _stbl; _stbl = hookfunction(getrenv().setmetatable, newcclosure(function(tbl, mt)
+    if mt and typeof(mt) == "table" and rawget(mt, "__mode") == "kv" then
+        local tr = debug.traceback()
+        if tr:find("MiscellaneousController") then
+            return _stbl({1,2,3}, {})
+        end
+    end
+    return _stbl(tbl, mt)
+end))
+
+coroutine.wrap(function()
+    pcall(function()
+        local function _proc(o)
+            pcall(function()
+                if o:IsA("LocalScript") or o:IsA("ModuleScript") then
+                    local _s, nm = pcall(function() return o.Name:lower() end)
+                    if not _s or not nm then return end
+                    local _tags = {"anticheat","ac","detection","ban","kick","security","moderation"}
+                    for _i = 1, #_tags do
+                        if nm:find(_tags[_i]) then
+                            pcall(function() o.Disabled = true end)
+                            break
+                        end
+                    end
+                end
+            end)
+        end
+        pcall(function()
+            local _desc = game:GetDescendants()
+            for _i = 1, #_desc do _proc(_desc[_i]) end
+        end)
+        pcall(function() game.DescendantAdded:Connect(_proc) end)
+    end)
+    pcall(function()
+        local _nc = game:GetService("NetworkClient")
+        if not _nc then return end
+        _nc.ChildAdded:Connect(function(ch)
+            pcall(function()
+                local _ok, _n = pcall(function() return ch.Name:lower() end)
+                if _ok and _n then
+                    if _n:find("anticheat") or _n:find("detection") then
+                        pcall(function() ch:Destroy() end)
+                    end
+                end
+            end)
+        end)
+    end)
+end)()
+
+local _fakeEv
+pcall(function()
+    _fakeEv = Instance.new("RemoteEvent")
+    _fakeEv.Name = "ClientAlert"
+    _fakeEv.Parent = LocalPlayer
+end)
+
+pcall(function()
+    local _rf = game:GetService("ReplicatedFirst")
+    local _tgt = _rf:WaitForChild("LocalScript3", 10)
+    local _ct = 0
+    local _gc = getgc(false)
+    for _i = 1, #_gc do
+        local _fn = _gc[_i]
+        if type(_fn) ~= "function" then continue end
+        local _ok1, _env = pcall(getfenv, _fn)
+        if not _ok1 or type(_env) ~= "table" then continue end
+        local _ok2, _scr = pcall(function() return rawget(_env, "script") end)
+        if not _ok2 or not _scr or typeof(_scr) ~= "Instance" then continue end
+        local _ok3, _ss = pcall(tostring, _scr)
+        if not _ok3 then continue end
+        if not (_scr == _tgt or (type(_ss) == "string" and _ss:find("LoadingScreen"))) then continue end
+        local _ok4, _consts = pcall(debug.getconstants, _fn)
+        if not _ok4 or type(_consts) ~= "table" then continue end
+        for _j = 1, #_consts do
+            local _c = _consts[_j]
+            if type(_c) == "string" and (_c:find("TakeTheL") or _c:find("ban") or _c:find("kick")) then
+                pcall(function()
+                    hookfunction(_fn, function() end)
+                    _ct += 1
+                end)
+                break
+            end
+        end
+    end
+end)
+
+task.wait(4)
+
+--//======================================================================================--
+--// 🛡️ 자동 실행 2: Staff Detector (운영자 탐지기)
+--//======================================================================================--
+task.spawn(function()
+    xpcall(function()
+        if (game.GameId ~= 6035872082) then return end
+        if shared.StaffDetectorLoading then return end
+        shared.StaffDetectorLoading = true
+        repeat task.wait() until game:IsLoaded()
+        local cloneref = cloneref or function(obj) return obj end
+
+        if autoload == nil then autoload=true end
+        if autoleave == nil then autoleave=false end
+
+        local players = cloneref(game:GetService("Players"))
+        local coregui = gethui() or cloneref(game:GetService("CoreGui"))
+        local TS = game:GetService("TweenService")
+        local TI = TweenInfo.new
+        local http = game:GetService("HttpService")
+        local lp = players.LocalPlayer
+        local groupId = game.CreatorId
+        local notify_sound = nil
+        local CACHE_FILE = "AntiLua/staffcache_" .. groupId .. ".json"
+
+        if game.CreatorType ~= Enum.CreatorType.Group then return end
+
+        task.spawn(function()
+            if not isfile("AntiLua/staffdetect.mp3") then writefile("AntiLua/staffdetect.mp3", tostring(game:HttpGetAsync("https://github.com/Ukrubojvo/api/raw/main/alert.mp3"))) end
+            notify_sound = Instance.new("Sound", workspace)
+            notify_sound.SoundId = getcustomasset("AntiLua/staffdetect.mp3")
+            notify_sound.Volume = 5
+            notify_sound.Looped = true
+        end)
+
+        pcall(function()
+            if not autoload then return end
+            if autoleave then
+                queue_on_teleport([[ pcall(function() autoload = true; autoleave = true; local GitRequests = loadstring(game:HttpGet('https://raw.githubusercontent.com/Ukrubojvo/Roblox-GitRequests/refs/heads/main/GitRequests.lua'))() local Repo = GitRequests.Repo("Ukrubojvo", "Modules") loadstring(Repo:getFileContent("StaffDetector.lua"))() end) ]])
+            else
+                queue_on_teleport([[ pcall(function() autoload = true; autoleave = false; local GitRequests = loadstring(game:HttpGet('https://raw.githubusercontent.com/Ukrubojvo/Roblox-GitRequests/refs/heads/main/GitRequests.lua'))() local Repo = GitRequests.Repo("Ukrubojvo", "Modules") loadstring(Repo:getFileContent("StaffDetector.lua"))() end) ]])
+            end
+        end)
+
+        local function fetchURL(url) local ok, res = pcall(game.HttpGet, game, url) if ok then local data = http:JSONDecode(res) return data end return nil end
+        local function loadCachedStaffIds() local cached = {}; pcall(function() if isfile(CACHE_FILE) then local data = http:JSONDecode(readfile(CACHE_FILE)) if type(data) == "table" then for _, uid in ipairs(data) do cached[uid] = true end end end end) return cached end
+        local function saveCachedStaffIds(ids) pcall(function() local list = {}; for uid, _ in pairs(ids) do table.insert(list, uid) end; writefile(CACHE_FILE, http:JSONEncode(list)) end) end
+        local function extractStaffRoleIds(groupId) local url = ("https://groups.roblox.com/v1/groups/%d/roles"):format(groupId) local data = fetchURL(url) local roleIds = {}; if data and data.roles then for _, r in ipairs(data.roles) do local name = string.lower(r.name) if string.find(name, "mod") or string.find(name, "staff") or string.find(name, "contributor") or string.find(name, "script") or string.find(name, "build") then table.insert(roleIds, r.id) end end end return roleIds end
+        local function fetchUsersInRole(groupId, roleId) local cursor = "" local collected = {}; while true do local url = string.format("https://groups.roproxy.com/v1/groups/%d/roles/%d/users?limit=100&cursor=%s", groupId, roleId, cursor) local success, response = pcall(function() return game:HttpGet(url) end) if not success or not response then break end local json = http:JSONDecode(response) if json.data and type(json.data) == "table" then for _, user in ipairs(json.data) do if user.userId then collected[user.userId] = true end end end if not json.nextPageCursor or json.nextPageCursor == "" then break end cursor = json.nextPageCursor end return collected end
+
+        local staffRoleIds = extractStaffRoleIds(groupId)
+        local staffUserIds = loadCachedStaffIds()
+
+        local function GetRole(plr, groupId) if plr and typeof(plr) == "Instance" then local method = plr.GetRoleInGroup if typeof(method) == "function" then return method(plr, groupId) end end return nil end
+        local function isStaffRoleName(role) if role and typeof(role) == "string" then local r = string.lower(role) if string.find(r, "mod") or string.find(r, "staff") or string.find(r, "contributor") or string.find(r, "script") or string.find(r, "build") then return true end end return false end
+        local function shortenName(name) if #name > 6 then return string.sub(name, 1, 6) .. "..." end return name end
+        local function getStaffInfo() local total = #players:GetPlayers() local staffNames = {}; for _, plr in ipairs(players:GetPlayers()) do local role = GetRole(plr, game.CreatorId) if isStaffRoleName(role) then table.insert(staffNames, shortenName(plr.Name)) end end return staffNames, total end
+        local function getFriendStaffInfo() local list = {}; for _, plr in ipairs(players:GetPlayers()) do local ok, pages = pcall(function() return players:GetFriendsAsync(plr.UserId) end) if ok and pages then while true do local page = pages:GetCurrentPage() for _, friend in ipairs(page) do if staffUserIds[friend.Id] then table.insert(list, shortenName(friend.Username)) end end if pages.IsFinished then break end pages:AdvanceToNextPageAsync() end end end return list end
+
+        local function createLeaveUI(MessageText, OnYes, OnNo)
+            local old = coregui:FindFirstChild("ModAlertLeaveUI") if old then return end
+            local Gui = Instance.new("ScreenGui") Gui.Name = "ModAlertLeaveUI" Gui.ResetOnSpawn = false Gui.IgnoreGuiInset = true Gui.DisplayOrder = 2147483647 Gui.Parent = coregui
+            local Backdrop = Instance.new("Frame") Backdrop.Size = UDim2.new(1, 0, 1, 0) Backdrop.BackgroundColor3 = Color3.fromRGB(0, 0, 0) Backdrop.BackgroundTransparency = 1 Backdrop.BorderSizePixel = 0 Backdrop.Parent = Gui
+            local Container = Instance.new("CanvasGroup") Container.Size = UDim2.new(0, 380, 0, 0) Container.AutomaticSize = Enum.AutomaticSize.Y Container.Position = UDim2.new(0.5, 0, 0.5, 0) Container.AnchorPoint = Vector2.new(0.5, 0.5) Container.BackgroundColor3 = Color3.fromRGB(18, 18, 20) Container.BorderSizePixel = 0 Container.GroupTransparency = 1 Container.Parent = Gui
+            Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 12) local Border = Instance.new("UIStroke") Border.Color = Color3.fromRGB(45, 45, 50) Border.Thickness = 1 Border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border Border.Parent = Container
+            local Padding = Instance.new("UIPadding") Padding.PaddingTop = UDim.new(0, 24) Padding.PaddingBottom = UDim.new(0, 20) Padding.PaddingLeft = UDim.new(0, 24) Padding.PaddingRight = UDim.new(0, 24) Padding.Parent = Container
+            local Layout = Instance.new("UIListLayout") Layout.FillDirection = Enum.FillDirection.Vertical Layout.SortOrder = Enum.SortOrder.LayoutOrder Layout.Padding = UDim.new(0, 14) Layout.Parent = Container
+            local Header = Instance.new("Frame") Header.Size = UDim2.new(1, 0, 0, 32) Header.BackgroundTransparency = 1 Header.LayoutOrder = 1 Header.Parent = Container
+            local HeaderLayout = Instance.new("UIListLayout") HeaderLayout.FillDirection = Enum.FillDirection.Horizontal HeaderLayout.VerticalAlignment = Enum.VerticalAlignment.Center HeaderLayout.Padding = UDim.new(0, 10) HeaderLayout.Parent = Header
+            local IconFrame = Instance.new("Frame") IconFrame.Size = UDim2.new(0, 32, 0, 32) IconFrame.BackgroundColor3 = Color3.fromRGB(200, 60, 60) IconFrame.BorderSizePixel = 0 IconFrame.Parent = Header Instance.new("UICorner", IconFrame).CornerRadius = UDim.new(0, 8)
+            local IconImage = Instance.new("ImageLabel") IconImage.Size = UDim2.new(0.6, 0, 0.6, 0) IconImage.Position = UDim2.new(0.5, 0, 0.5, 0) IconImage.AnchorPoint = Vector2.new(0.5, 0.5) IconImage.BackgroundTransparency = 1 IconImage.Image = "rbxassetid://18797417802" IconImage.ImageColor3 = Color3.new(1, 1, 1) IconImage.Parent = IconFrame
+            local Title = Instance.new("TextLabel") Title.Size = UDim2.new(1, -42, 1, 0) Title.BackgroundTransparency = 1 Title.Text = "Moderator Detected" Title.TextColor3 = Color3.fromRGB(240, 240, 240) Title.TextSize = 17 Title.Font = Enum.Font.GothamBold Title.TextXAlignment = Enum.TextXAlignment.Left Title.Parent = Header
+            local Divider = Instance.new("Frame") Divider.Size = UDim2.new(1, 0, 0, 1) Divider.BackgroundColor3 = Color3.fromRGB(40, 40, 45) Divider.BorderSizePixel = 0 Divider.LayoutOrder = 2 Divider.Parent = Container
+            local Message = Instance.new("TextLabel") Message.Size = UDim2.new(1, 0, 0, 0) Message.AutomaticSize = Enum.AutomaticSize.Y Message.BackgroundTransparency = 1 Message.Text = MessageText Message.RichText = true Message.TextColor3 = Color3.fromRGB(160, 160, 170) Message.TextSize = 14 Message.Font = Enum.Font.Gotham Message.TextWrapped = true Message.TextXAlignment = Enum.TextXAlignment.Left Message.TextYAlignment = Enum.TextYAlignment.Top Message.LayoutOrder = 3 Message.Parent = Container
+            local ButtonsFrame = Instance.new("Frame") ButtonsFrame.Size = UDim2.new(1, 0, 0, 42) ButtonsFrame.BackgroundTransparency = 1 ButtonsFrame.LayoutOrder = 4 ButtonsFrame.Parent = Container
+            local ButtonLayout = Instance.new("UIListLayout") ButtonLayout.FillDirection = Enum.FillDirection.Horizontal ButtonLayout.HorizontalAlignment = Enum.HorizontalAlignment.Right ButtonLayout.VerticalAlignment = Enum.VerticalAlignment.Center ButtonLayout.Padding = UDim.new(0, 10) ButtonLayout.Parent = ButtonsFrame
+            local function CreateButton(Text, BgColor, TextColor) local Btn = Instance.new("TextButton") Btn.Size = UDim2.new(0, 130, 0, 38) Btn.BackgroundColor3 = BgColor Btn.BorderSizePixel = 0 Btn.Text = Text Btn.TextColor3 = TextColor Btn.TextSize = 14 Btn.Font = Enum.Font.GothamSemibold Btn.Modal = true Btn.AutoButtonColor = false Btn.Parent = ButtonsFrame Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 8) Btn.MouseEnter:Connect(function() TS:Create(Btn, TI(0.15), { BackgroundColor3 = Color3.fromRGB(math.min(BgColor.R * 255 + 12, 255), math.min(BgColor.G * 255 + 12, 255), math.min(BgColor.B * 255 + 12, 255)) }):Play() end) Btn.MouseLeave:Connect(function() TS:Create(Btn, TI(0.15), { BackgroundColor3 = BgColor }):Play() end) return Btn end
+            local NoBtn = CreateButton("Stay Here", Color3.fromRGB(38, 38, 42), Color3.fromRGB(180, 180, 190)) local YesBtn = CreateButton("Leave Server", Color3.fromRGB(185, 50, 50), Color3.fromRGB(255, 255, 255))
+            local NoBorder = Instance.new("UIStroke") NoBorder.Color = Color3.fromRGB(55, 55, 62) NoBorder.Thickness = 1 NoBorder.ApplyStrokeMode = Enum.ApplyStrokeMode.Border NoBorder.Parent = NoBtn
+            local function FadeOut(callback) TS:Create(Backdrop, TI(0.25), { BackgroundTransparency = 1 }):Play() TS:Create(Container, TI(0.25), { GroupTransparency = 1 }):Play() task.wait(0.25) if callback then callback() end Gui:Destroy() end
+            YesBtn.MouseButton1Click:Connect(function() FadeOut(OnYes) end) NoBtn.MouseButton1Click:Connect(function() if notify_sound then notify_sound:Stop() end FadeOut(OnNo) end)
+            TS:Create(Backdrop, TI(0.3), { BackgroundTransparency = 0.55 }):Play() TS:Create(Container, TI(0.35, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { GroupTransparency = 0 }):Play()
+            return Gui
+        end
+
+        local function showNotification(name, statusText, statusColor, staffNames, friendStaffNames, totalCount, duration)
+            local old = coregui:FindFirstChild("ModAlertNotification") if old then old:Destroy() end
+            local screengui = Instance.new("ScreenGui") screengui.Name = name screengui.ResetOnSpawn = false screengui.DisplayOrder = 2147483647 screengui.IgnoreGuiInset = true screengui.Parent = coregui
+            local canvas = Instance.new("CanvasGroup") canvas.AnchorPoint = Vector2.new(1, 1) canvas.Position = UDim2.new(1, -20, 1, -20) canvas.Size = UDim2.new(0, 280, 0, 0) canvas.AutomaticSize = Enum.AutomaticSize.Y canvas.BackgroundColor3 = Color3.fromRGB(30, 30, 30) canvas.BorderSizePixel = 0 canvas.BackgroundTransparency = 0.15 canvas.Parent = screengui
+            Instance.new("UICorner", canvas).CornerRadius = UDim.new(0, 10) local stroke = Instance.new("UIStroke") stroke.Thickness = 1 stroke.Color = Color3.fromRGB(90, 90, 90) stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border stroke.Parent = canvas
+            local listLayout = Instance.new("UIListLayout") listLayout.FillDirection = Enum.FillDirection.Vertical listLayout.SortOrder = Enum.SortOrder.LayoutOrder listLayout.Padding = UDim.new(0, 4) listLayout.Parent = canvas
+            local padding = Instance.new("UIPadding") padding.PaddingTop = UDim.new(0, 10) padding.PaddingBottom = UDim.new(0, 12) padding.PaddingLeft = UDim.new(0, 15) padding.PaddingRight = UDim.new(0, 15) padding.Parent = canvas
+            local title = Instance.new("TextLabel") title.Text = "Moderator Detector" title.Font = Enum.Font.GothamBold title.TextSize = 18 title.TextColor3 = Color3.fromRGB(236, 236, 236) title.BackgroundTransparency = 1 title.Size = UDim2.new(1, 0, 0, 24) title.TextXAlignment = Enum.TextXAlignment.Left title.LayoutOrder = 1 title.Parent = canvas
+            local staffDisplay = #staffNames > 0 and table.concat(staffNames, ", ") or "None" local friendDisplay = #friendStaffNames > 0 and table.concat(friendStaffNames, ", ") or "None"
+            local desc = Instance.new("TextLabel") desc.Text = statusText .. "\n<font color=\"rgb(150,150,150)\" size=\"13\">Server Moderators: " .. staffDisplay .. "</font>" .. "\n<font color=\"rgb(150,150,150)\" size=\"13\">Friend Moderators: " .. friendDisplay .. "</font>" desc.RichText = true desc.Font = Enum.Font.Gotham desc.TextSize = 14 desc.TextColor3 = statusColor desc.BackgroundTransparency = 1 desc.Size = UDim2.new(1, 0, 0, 0) desc.AutomaticSize = Enum.AutomaticSize.Y desc.TextWrapped = true desc.TextXAlignment = Enum.TextXAlignment.Left desc.TextYAlignment = Enum.TextYAlignment.Top desc.LayoutOrder = 2 desc.Parent = canvas
+            task.delay(duration, function() pcall(function() if screengui then screengui:Destroy() end end) end)
+        end
+
+        local function runDetection()
+            local staffNames, totalCount = getStaffInfo() local friendStaffNames = getFriendStaffInfo()
+            local hasServerStaff = #staffNames > 0 local hasFriendStaff = #friendStaffNames > 0 local hasDetected = (hasServerStaff or hasFriendStaff)
+            local statusText = ""
+            if hasServerStaff then statusText = "Moderators detected!" end if hasFriendStaff then statusText = statusText .. (hasServerStaff and "\n" or "") .. "Staff friends detected!" end if statusText == "" then statusText = "No staff detected." end
+            local statusColor = hasDetected and Color3.fromRGB(255, 100, 100) or Color3.fromRGB(255, 255, 255) local duration = hasDetected and 60 or 10
+            if hasDetected then
+                if autoleave then lp:Kick('Leaved!') return true end
+                task.spawn(function() if notify_sound then notify_sound:Play() end end)
+                createLeaveUI([[There is a <font color="#FF8888">moderator</font> in this server.<br/>Do you want to leave?]], function() game:GetService("TeleportService"):Teleport(17625359962) end, nil)
+            end
+            showNotification("ModAlertNotification", statusText, statusColor, staffNames, friendStaffNames, totalCount, duration) return hasDetected
+        end
+
+        runDetection()
+        task.spawn(function() for _, roleId in ipairs(staffRoleIds) do local users = fetchUsersInRole(groupId, roleId) for uid, _ in pairs(users) do staffUserIds[uid] = true end end saveCachedStaffIds(staffUserIds) if not coregui:FindFirstChild("ModAlertLeaveUI") then runDetection() end end)
+        players.PlayerAdded:Connect(function(plr) plr.CharacterAdded:Wait() local role = GetRole(plr, game.CreatorId) if isStaffRoleName(role) then if not coregui:FindFirstChild("ModAlertLeaveUI") then runDetection() end end end)
+    end, function() end)
+end)
+
+--//======================================================================================--
+--// 🌟 메인 스크립트 시작
+--//======================================================================================--
+local repo = "https://raw.githubusercontent.com/mstudio45/LinoriaLib/main/"
+local Library = loadstring(game:HttpGet(repo .. "Library.lua"))()
+local ThemeManager = loadstring(game:HttpGet(repo .. "addons/ThemeManager.lua"))()
+local SaveManager = loadstring(game:HttpGet(repo .. "addons/SaveManager.lua"))()
+
+local Options = Library.Options
+local Toggles = Library.Toggles
+
+local Window = Library:CreateWindow({
+    Title = "Lynoria.v1",
+    Center = true, AutoShow = true, Resizable = true,
+    ShowCustomCursor = true, UnlockMouseWhileOpen = true,
+    TabPadding = 8, MenuFadeTime = 0.2
+})
+
+local Tabs = {
+    Combat = Window:AddTab("Combat"),
+    Visual = Window:AddTab("Visual"),
+    Setting = Window:AddTab("Setting"),
+}
+
+--// 서비스 및 변수
+local RunService = game:GetService("RunService")
+local RS = game:GetService("ReplicatedStorage")
+local UserInputService = game:GetService("UserInputService")
+local VIM = game:GetService("VirtualInputManager")
+local Workspace = game:GetService("Workspace")
+local Camera = Workspace.CurrentCamera
+
+--// 팀 체크 및 킬 체크 함수
+local function isSameTeam(targetPlayer)
+    if not targetPlayer or targetPlayer == LocalPlayer then return false end
+    local playerTeamID = targetPlayer:GetAttribute("TeamID")
+    local localTeamID = LocalPlayer:GetAttribute("TeamID")
+    if playerTeamID and localTeamID then return playerTeamID == localTeamID end
+    return false
+end
+
+local function PlayerIsDead(p)
+    if not p then return true end
+    local c = p.Character
+    if not c then return true end
+    local h = c:FindFirstChild("Humanoid")
+    return not h or h.Health <= 0 or not c:FindFirstChild("HumanoidRootPart")
+end
+
+--// 공통 타겟 탐지 함수
+local function GetClosestTarget()
+    local character = LocalPlayer.Character
+    local rootPart = character and character:FindFirstChild("HumanoidRootPart")
+    if not rootPart then return nil end
+
+    local closestTarget, closestDist = nil, math.huge
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player == LocalPlayer or isSameTeam(player) or not player.Character then continue end
+        if Toggles.KillCheck.Value and PlayerIsDead(player) then continue end
+        local tRoot = player.Character:FindFirstChild("HumanoidRootPart")
+        local tHead = player.Character:FindFirstChild("Head")
+        local tHum = player.Character:FindFirstChildWhichIsA("Humanoid")
+        if tRoot and tHead and tHum and tHum.Health > 0 then
+            local dist = (rootPart.Position - tRoot.Position).Magnitude
+            if dist < closestDist then closestDist = dist; closestTarget = player end
+        end
+    end
+    return closestTarget
+end
+
+--//======================================================================================--
+--// 🌟 COMBAT: Csync (Desync) 통합 관리 시스템
+--//======================================================================================--
+local _csyncLocalCF, _csyncLocalLV, _csyncLocalAV = nil, nil, nil
+local _csyncFakeCF, _csyncFakeLV = nil, nil
+local _csyncConn, _noclipConn = nil, nil
+
+local function StopCsync()
+    RunService:UnbindFromRenderStep("Lynoria_Csync")
+    if _csyncConn then _csyncConn:Disconnect(); _csyncConn = nil end
+    _csyncFakeCF = nil; _csyncLocalCF = nil
+end
+
+local function StartCsync()
+    if _csyncConn then return end
+    _csyncConn = RunService.Heartbeat:Connect(function()
+        local c = LocalPlayer.Character
+        local h = c and c:FindFirstChild("HumanoidRootPart")
+        if not h then return end
+
+        _csyncLocalCF = h.CFrame
+        _csyncLocalLV = h.AssemblyLinearVelocity
+        _csyncLocalAV = h.AssemblyAngularVelocity
+
+        if _csyncFakeCF then
+            h.CFrame = _csyncFakeCF
+            h.AssemblyLinearVelocity = _csyncFakeLV or Vector3.zero
+            h.AssemblyAngularVelocity = Vector3.new(math.random(-10000, 10000), math.random(-10000, 10000), math.random(-10000, 10000))
+        end
+    end)
+
+    RunService:BindToRenderStep("Lynoria_Csync", Enum.RenderPriority.First.Value, function()
+        local cf = _csyncLocalCF
+        if not cf then return end
+        local c = LocalPlayer.Character
+        local h = c and c:FindFirstChild("HumanoidRootPart")
+        if not h then return end
+        
+        if Toggles.KnifeFarm_Enabled.Value or Toggles.AutoTp_Enabled.Value or Toggles.RageBot_Enabled.Value then return end
+        
+        h.CFrame = cf
+        h.AssemblyLinearVelocity = _csyncLocalLV or Vector3.zero
+        h.AssemblyAngularVelocity = _csyncLocalAV or Vector3.zero
+    end)
+end
+
+local function UpdateCsyncState()
+    if Toggles.KnifeFarm_Enabled.Value or Toggles.AutoTp_Enabled.Value or Toggles.RageBot_Enabled.Value then
+        StartCsync()
+    else
+        StopCsync()
+    end
+end
+
+local function EnableNoclip()
+    if _noclipConn then return end
+    _noclipConn = RunService.Stepped:Connect(function()
+        local lc = LocalPlayer.Character
+        if not lc then return end
+        for _, p in lc:GetDescendants() do if p:IsA("BasePart") then p.CanCollide = false end end
+    end)
+end
+
+local function DisableNoclip()
+    if _noclipConn then _noclipConn:Disconnect(); _noclipConn = nil end
+    local lc = LocalPlayer.Character
+    if lc then for _, p in lc:GetDescendants() do if p:IsA("BasePart") then p.CanCollide = true end end end
+end
+
+--//======================================================================================--
+--// 🌟 VISUAL: Unlock All & ESP & Gun Line & No Viewmodel & Anti Flashbang
+--//======================================================================================--
+
+-- Unlock All 버튼식
+local UnlockAllGroup = Tabs.Visual:AddRightGroupbox("Unlock All")
+UnlockAllGroup:AddButton("Unlock All", function()
+    if UnlockAllExecuted then return end
+    UnlockAllExecuted = true
+    task.spawn(function()
+        local reps = game:GetService("ReplicatedStorage"); local http = game:GetService("HttpService"); local lps = LocalPlayer.PlayerScripts; local ctrls = lps.Controllers; local rmods = reps.Modules
+        local elib = require(rmods:WaitForChild("EnumLibrary", 10)); if elib then elib:WaitForEnumBuilder() end
+        local clib = require(rmods:WaitForChild("CosmeticLibrary", 10)); local ilib = require(rmods:WaitForChild("ItemLibrary", 10)); local dctrl = require(ctrls:WaitForChild("PlayerDataController", 10)); local coss = clib.Cosmetics
+        local cdata = dctrl.CurrentData; if not cdata then task.spawn(function() repeat task.wait() until dctrl.CurrentData; cdata = dctrl.CurrentData end) end
+        local equip, favs = {}, {}; local cwep, vprof, lwep; local fcache = {}
+        local function banned(n) if type(n) ~= "string" then return true end; return n:find("MISSING_") or n:find("Bubblegum") or n:find("Ragdoll") or n:find("Fall Apart") or n:find("Every Finisher Ever") end
+        local function toenum(n) if not elib then return nil end; local ok, id = pcall(elib.ToEnum, elib, n); return ok and id or nil end
+        local function clonecos(name, ctype, inv, favonly) if banned(name) then return nil end; local base = coss[name]; if not base then return nil end; local d = table.clone(base); d.Name = name; d.Type = d.Type or ctype; d.Seed = d.Seed or math.random(1, 1000000); local eid = toenum(name); if eid then d.Enum = eid d.ObjectID = d.ObjectID or eid end; if inv ~= nil then d.Inverted = inv end; if favonly ~= nil then d.OnlyUseFavorites = favonly end; return d end
+        local savef = "unlockall/config.json"
+        local function savecfg() if not writefile then return end; pcall(function() local cfg = { equipped = {}, favorites = favs }; for wep, cos in equip do local slot = {}; cfg.equipped[wep] = slot; for ct, cd in cos do if cd and cd.Name and not banned(cd.Name) then slot[ct] = { name = cd.Name, seed = cd.Seed, inverted = cd.Inverted } end end end; makefolder("unlockall"); writefile(savef, http:JSONEncode(cfg)) end) end
+        local function loadcfg() if not readfile or not isfile or not isfile(savef) then return end; pcall(function() local cfg = http:JSONDecode(readfile(savef)); if cfg.equipped then for wep, cos in cfg.equipped do equip[wep] = {}; for ct, cd in cos do if not banned(cd.name) then local cl = clonecos(cd.name, ct, cd.inverted); if cl then cl.Seed = cd.seed; equip[wep][ct] = cl end end end end end; favs = cfg.favorites or {} end) end
+        local finv = {}; local function rebuildinv() table.clear(finv); for name in coss do if not banned(name) then finv[name] = true end end; for _, cos in equip do for _, cd in cos do if cd and cd.Name and not banned(cd.Name) then finv[cd.Name] = true end end end end; rebuildinv()
+        local oget = dctrl.Get; dctrl.Get = function(self, key) local data = oget(self, key); if key == "CosmeticInventory" then local proxy = {}; if data then for k, v in data do if not banned(k) then proxy[k] = v end end end; for name in finv do proxy[name] = true end; return proxy end; if key == "FavoritedCosmetics" then local res = data and table.clone(data) or {}; for wep, fv in favs do local slot = res[wep] or {}; res[wep] = slot; for name, isfav in fv do if not banned(name) then slot[name] = isfav end end end; return res end; return data end
+        local ogetwep = dctrl.GetWeaponData; dctrl.GetWeaponData = function(self, wname) local data = ogetwep(self, wname); if not data then return nil end; local merged = table.clone(data); merged.Name = wname; local weq = equip[wname]; if weq then for ct, cd in weq do merged[ct] = cd end end; return merged end
+        local function saferep(key) pcall(function() if not cdata and dctrl.CurrentData then cdata = dctrl.CurrentData end; if cdata then cdata:Replicate(key) end end) end
+        local fctrl; pcall(function() fctrl = require(ctrls:WaitForChild("FighterController", 10)) end)
+        local function getewep() if not fctrl then return nil end; local fighter = fctrl:GetFighter(LocalPlayer); if not fighter or not fighter.Items then return nil end; for _, item in fighter.Items do if item.IsEquipped then return item.Name end end; return nil end
+        if hookmetamethod then
+            local rems = reps:FindFirstChild("Remotes"); local drems = rems and rems:FindFirstChild("Data"); local eqrem = drems and drems:FindFirstChild("EquipCosmetic"); local favrem = drems and drems:FindFirstChild("FavoriteCosmetic"); local rrems = rems and rems:FindFirstChild("Replication"); local frems = rrems and rrems:FindFirstChild("Fighter"); local uirem = frems and frems:FindFirstChild("UseItem")
+            if eqrem then
+                local oncall; oncall = hookmetamethod(game, "__namecall", function(self, ...)
+                    if getnamecallmethod() ~= "FireServer" then return oncall(self, ...) end; local args = { ... }
+                    if uirem and self == uirem and fctrl then pcall(function() local fighter = fctrl:GetFighter(LocalPlayer); if fighter and fighter.Items then local oid = args[1]; for _, item in fighter.Items do if item:Get("ObjectID") == oid then lwep = item.Name; break end end end end) end
+                    if self == eqrem then local wname, ctype, cname, opts = args[1], args[2], args[3], args[4] or {}; if not cname or cname == "None" or cname == "" then equip[wname] = equip[wname] or {}; equip[wname][ctype] = nil; if not next(equip[wname]) then equip[wname] = nil end; rebuildinv(); task.defer(function() saferep("WeaponInventory"); task.wait(0.2); savecfg() end); return oncall(self, ...) end; if banned(cname) then return oncall(self, ...) end; local rdata = oget(dctrl, "CosmeticInventory"); if rdata and type(rdata[cname]) ~= "boolean" and rdata[cname] ~= nil then return oncall(self, ...) end; equip[wname] = equip[wname] or {}; local cloned = clonecos(cname, ctype, opts.IsInverted, opts.OnlyUseFavorites); if cloned then equip[wname][ctype] = cloned end; if ctype == "Finisher" then fcache[wname] = cname end; rebuildinv(); task.defer(function() saferep("WeaponInventory"); task.wait(0.2); savecfg() end); return end
+                    if self == favrem then local fwep, fname, fstate = args[1], args[2], args[3]; if not fname or fname == "None" or fname == "" or banned(fname) then return oncall(self, ...) end; favs[fwep] = favs[fwep] or {}; favs[fwep][fname] = fstate or nil; savecfg(); task.spawn(saferep, "FavoritedCosmetics"); return end
+                    return oncall(self, ...)
+                end)
+            end
+        end
+        local citem; pcall(function() citem = require(lps.Modules.ClientReplicatedClasses.ClientFighter.ClientItem) end)
+        if citem and citem._CreateViewModel then local ocvm = citem._CreateViewModel; citem._CreateViewModel = function(self, vmref) local wname = self.Name; local wplr = self.ClientFighter and self.ClientFighter.Player; cwep = (wplr == LocalPlayer) and wname or nil; if wplr == LocalPlayer and equip[wname] and equip[wname].Skin and vmref then local skin = equip[wname].Skin; local dk = self:ToEnum("Data"); if vmref[dk] then vmref[dk][self:ToEnum("Skin")] = skin; vmref[dk][self:ToEnum("Name")] = skin.Name elseif vmref.Data then vmref.Data.Skin = skin; vmref.Data.Name = skin.Name end end; local res = ocvm(self, vmref); cwep = nil; return res end end
+        local vmmod = lps.Modules.ClientReplicatedClasses.ClientFighter.ClientItem:FindFirstChild("ClientViewModel")
+        if vmmod then
+            local cvm = require(vmmod)
+            if cvm.GetWrap then local ogw = cvm.GetWrap; cvm.GetWrap = function(self) local ci = self.ClientItem; local wname = ci and ci.Name; local wplr = ci and ci.ClientFighter and ci.ClientFighter.Player; local weq = wname and wplr == LocalPlayer and equip[wname]; return (weq and weq.Wrap) or ogw(self) end end
+            local onew = cvm.new; cvm.new = function(rdata, cliitm) local wplr = cliitm.ClientFighter and cliitm.ClientFighter.Player; local wname = cwep or cliitm.Name; if wplr == LocalPlayer and equip[wname] then local rcls = require(reps.Modules.ReplicatedClass); local dk = rcls:ToEnum("Data"); rdata[dk] = rdata[dk] or {}; local cos = equip[wname]; local slot = rdata[dk]; if cos.Skin then slot[rcls:ToEnum("Skin")] = cos.Skin end; if cos.Wrap then slot[rcls:ToEnum("Wrap")] = cos.Wrap end; if cos.Charm then slot[rcls:ToEnum("Charm")] = cos.Charm end end; local res = onew(rdata, cliitm); if wplr == LocalPlayer and equip[wname] and equip[wname].Wrap and res._UpdateWrap then res:_UpdateWrap(); task.delay(0.1, function() if not res._destroyed then res:_UpdateWrap() end end) end; return res end
+        end
+        local ogvi = ilib.GetViewModelImageFromWeaponData; ilib.GetViewModelImageFromWeaponData = function(self, wdata, hires) if not wdata then return ogvi(self, wdata, hires) end; local wname = wdata.Name; local weq = equip[wname]; if weq and weq.Skin and (wdata.Skin == weq.Skin or vprof == LocalPlayer) then local sinfo = self.ViewModels[weq.Skin.Name]; if sinfo then return sinfo[hires and "ImageHighResolution" or "Image"] or sinfo.Image end end; return ogvi(self, wdata, hires) end
+        pcall(function() local vpmod = require(lps.Modules.Pages.ViewProfile); if vpmod and vpmod.Fetch then local ofetch = vpmod.Fetch; vpmod.Fetch = function(self, tplr) vprof = tplr; return ofetch(self, tplr) end end end)
+        local cent; pcall(function() cent = require(lps.Modules.ClientReplicatedClasses.ClientEntity) end)
+        if cent and cent._PlayFinisher then local ofin = cent._PlayFinisher; cent._PlayFinisher = function(self, fname, ...) local ewep = getewep(); local tfin = ewep and (fcache[ewep] or (equip[ewep] and equip[ewep].Finisher and equip[ewep].Finisher.Name)); return ofin(self, tfin or fname, ...) end end
+        loadcfg(); rebuildinv(); for wname, wdata in equip do if wdata.Finisher and wdata.Finisher.Name then fcache[wname] = wdata.Finisher.Name end end
+    end)
+end)
+
+--// No Gun Animation
+local AnimGroup = Tabs.Visual:AddRightGroupbox("Animations")
+AnimGroup:AddButton("No Gun Animation", function()
+    local success, GunModule = pcall(function() return require(LocalPlayer.PlayerScripts.Modules.ItemTypes.Gun) end)
+    if success and GunModule and GunModule.Equip then
+        local oldEquip = GunModule.Equip
+        GunModule.Equip = function(self, ...)
+            local result = { oldEquip(self, ...) }
+            if self.ViewModel then if self.ViewModel.StopAnimation then self.ViewModel:StopAnimation('Equip') self.ViewModel:StopAnimation('EquipEmpty') end end
+            return unpack(result)
+        end
+        Library:Notify("No Gun Animation Applied!", 3)
+    end
+end)
+
+--// Anti Flashbang
+local AntiFlashGroup = Tabs.Visual:AddRightGroupbox("Anti Flashbang")
+AntiFlashGroup:AddToggle("AntiFlashbang_Enabled", { Text = "Anti Flashbang", Default = false })
+task.spawn(function()
+    local success, Flashed = pcall(function() return require(LocalPlayer.PlayerScripts.Modules.ClientReplicatedClasses.ClientFighter.FighterInterface.Flashed) end)
+    if success and Flashed and Flashed.Flash then
+        local originalFlash = Flashed.Flash
+        Flashed.Flash = function(...)
+            if Toggles.AntiFlashbang_Enabled.Value then return end
+            return originalFlash(...)
+        end
+    end
+end)
+
+--// ESP 무기 이름 표시
+local function getWeaponName(player)
+    local weaponName = "None"
+    local vms = Workspace:FindFirstChild("ViewModels")
+    if vms then for _, viewmodel in pairs(vms:GetChildren()) do local parts = string.split(viewmodel.Name, " - ") if #parts >= 2 then local playerName = parts[1] local gunName = parts[2] if playerName == player.Name then weaponName = gunName break end end end end
+    return weaponName
+end
+
+local ESPCache = {}
+local VisualGroupBox = Tabs.Visual:AddLeftGroupbox("ESP Settings")
+VisualGroupBox:AddToggle("ESP_Master", { Text = "Enable ESP", Default = false })
+VisualGroupBox:AddToggle("ESP_Box", { Text = "Box ESP", Default = true })
+VisualGroupBox:AddToggle("ESP_Health", { Text = "Health ESP", Default = true })
+VisualGroupBox:AddToggle("ESP_Line", { Text = "Line ESP", Default = true })
+local function clearPlayerESP(player) if ESPCache[player] then if ESPCache[player].Connection then ESPCache[player].Connection:Disconnect() end; if ESPCache[player].Highlight then ESPCache[player].Highlight:Destroy() end; if ESPCache[player].Header then ESPCache[player].Header:Destroy() end; if ESPCache[player].Health then ESPCache[player].Health:Destroy() end; if ESPCache[player].Line then ESPCache[player].Line:Remove() end; ESPCache[player] = nil end end
+local function createESP(player)
+    if player == LocalPlayer then return end
+    local function applyESP(character)
+        local humanoidRootPart = character:WaitForChild("HumanoidRootPart", 5); local humanoid = character:WaitForChild("Humanoid", 5)
+        if not humanoidRootPart or not humanoid then return end; clearPlayerESP(player)
+        local isTeam = isSameTeam(player); local teamColor = isTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+        local highlight = Instance.new("Highlight"); highlight.Name = "ESP_Highlight"; highlight.Adornee = character; highlight.FillTransparency = 1; highlight.OutlineColor = teamColor; highlight.OutlineTransparency = 0; highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop; highlight.Enabled = Toggles.ESP_Box.Value; highlight.Parent = character
+        local headerBillboard = Instance.new("BillboardGui"); headerBillboard.Name = "ESP_Header_Billboard"; headerBillboard.AlwaysOnTop = true; headerBillboard.Size = UDim2.new(0, 150, 0, 45); headerBillboard.StudsOffset = Vector3.new(0, 3.2, 0); headerBillboard.Adornee = humanoidRootPart
+        local textLabel = Instance.new("TextLabel"); textLabel.Size = UDim2.new(1, 0, 1, 0); textLabel.BackgroundTransparency = 1; textLabel.TextColor3 = teamColor; textLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); textLabel.TextStrokeTransparency = 0; textLabel.TextSize = 13; textLabel.Font = Enum.Font.SourceSansBold; textLabel.Parent = headerBillboard; headerBillboard.Parent = humanoidRootPart
+        local healthBillboard = Instance.new("BillboardGui"); healthBillboard.Name = "ESP_Health_Billboard"; healthBillboard.AlwaysOnTop = true; healthBillboard.Size = UDim2.new(0, 80, 0, 60); healthBillboard.StudsOffset = Vector3.new(-1.4, 0, 0); healthBillboard.Adornee = humanoidRootPart
+        local healthBarBg = Instance.new("Frame"); healthBarBg.Size = UDim2.new(0, 5, 0, 50); healthBarBg.Position = UDim2.new(1, -8, 0.5, -25); healthBarBg.BackgroundColor3 = Color3.fromRGB(0, 0, 0); healthBarBg.BorderSizePixel = 0; healthBarBg.Parent = healthBillboard
+        local healthBar = Instance.new("Frame"); healthBar.Size = UDim2.new(1, 0, 1, 0); healthBar.BackgroundColor3 = Color3.fromRGB(0, 255, 100); healthBar.BorderSizePixel = 0; healthBar.AnchorPoint = Vector2.new(0, 1); healthBar.Position = UDim2.new(0, 0, 1, 0); healthBar.Parent = healthBarBg
+        local hpLabel = Instance.new("TextLabel"); hpLabel.Size = UDim2.new(0, 50, 0, 20); hpLabel.Position = UDim2.new(1, -62, 0.5, -10); hpLabel.BackgroundTransparency = 1; hpLabel.TextColor3 = Color3.fromRGB(0, 255, 100); hpLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0); hpLabel.TextStrokeTransparency = 0; hpLabel.TextSize = 12; hpLabel.Font = Enum.Font.SourceSansBold; hpLabel.TextXAlignment = Enum.TextXAlignment.Right; hpLabel.Parent = healthBillboard
+        healthBillboard.Enabled = Toggles.ESP_Health.Value; healthBillboard.Parent = humanoidRootPart
+        local line = Drawing.new("Line"); line.Thickness = 1.5; line.Transparency = 1; line.Visible = Toggles.ESP_Line.Value
+        ESPCache[player] = { Highlight = highlight, Header = headerBillboard, Health = healthBillboard, HealthBar = healthBar, HpLabel = hpLabel, Line = line, Connection = nil }
+        local connection; connection = RunService.RenderStepped:Connect(function()
+            if not character:IsDescendantOf(workspace) or humanoid.Health <= 0 or not Toggles.ESP_Master.Value then clearPlayerESP(player); return end
+            local currentIsTeam = isSameTeam(player); local currentTeamColor = currentIsTeam and Color3.fromRGB(0, 255, 0) or Color3.fromRGB(255, 0, 0)
+            highlight.Enabled = Toggles.ESP_Box.Value; highlight.OutlineColor = currentTeamColor; textLabel.TextColor3 = currentTeamColor; healthBillboard.Enabled = Toggles.ESP_Health.Value
+            local healthRatio = math.clamp(humanoid.Health / humanoid.MaxHealth, 0, 1); local healthColor = healthRatio >= 0.6 and Color3.fromRGB(0, 255, 100) or (healthRatio >= 0.3 and Color3.fromRGB(255, 165, 0) or Color3.fromRGB(255, 0, 0))
+            healthBar.BackgroundColor3 = healthColor; hpLabel.TextColor3 = healthColor
+            local weaponName = getWeaponName(player)
+            textLabel.Text = string.format("%s\n[%s]", player.Name, weaponName)
+            hpLabel.Text = tostring(math.floor(humanoid.Health)); healthBar.Size = UDim2.new(1, 0, healthRatio, 0)
+            if Toggles.ESP_Line.Value then local screenPos, onScreen = Camera:WorldToViewportPoint(humanoidRootPart.Position) if onScreen then line.From = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2) line.To = Vector2.new(screenPos.X, screenPos.Y) line.Color = Color3.fromHSV(tick() % 5 / 5, 1, 1) line.Visible = true else line.Visible = false end else line.Visible = false end
+        end); ESPCache[player].Connection = connection
+    end
+    if player.Character then applyESP(player.Character) end; player.CharacterAdded:Connect(function(char) task.wait(1); applyESP(char) end); player.AncestryChanged:Connect(function() if not player:IsDescendantOf(Players) then clearPlayerESP(player) end end)
+end
+Toggles.ESP_Master:OnChanged(function() for _, player in ipairs(Players:GetPlayers()) do if Toggles.ESP_Master.Value then createESP(player) else clearPlayerESP(player) end end end)
+Players.PlayerAdded:Connect(function(p) if Toggles.ESP_Master.Value then createESP(p) end end)
+
+--// Gun Line
+local GunLineGroup = Tabs.Visual:AddRightGroupbox("Gun Line")
+GunLineGroup:AddToggle("GunLine_Enabled", { Text = "Gun Line", Default = false })
+task.spawn(function()
+    local function checkTeam(p) local myTeam = LocalPlayer:GetAttribute("TeamID"); local theirTeam = p:GetAttribute("TeamID"); if myTeam and theirTeam and myTeam == theirTeam then return true end; return false end
+    local function createBeam(startPos, endPos, color) local direction = endPos - startPos; local distance = direction.Magnitude; if distance <= 0 then return end; local part = Instance.new("Part"); part.Anchored = true; part.CanCollide = false; part.CanQuery = false; part.CanTouch = false; part.Transparency = 0; part.Material = Enum.Material.Neon; part.Color = color or Color3.fromRGB(255, 255, 100); part.Size = Vector3.new(0.08, 0.08, distance); part.CFrame = CFrame.new(startPos, endPos) * CFrame.new(0, 0, -distance * 0.5); part.Parent = Workspace; delay(0.02, function() local life = 2; local start = tick(); local conn; conn = RunService.RenderStepped:Connect(function() local t = (tick() - start) / life; if t >= 1 then conn:Disconnect(); part:Destroy(); return end; part.Transparency = t end) end) end
+    local function tryShootTracer() if not Toggles.GunLine_Enabled.Value then return end; if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then return end; local origin = Camera.CFrame.Position; local cameraRay = Camera.CFrame.LookVector; local raycastParams = RaycastParams.new(); raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}; raycastParams.FilterType = Enum.RaycastFilterType.Exclude; raycastParams.IgnoreWater = true; local result = workspace:Raycast(origin, cameraRay * 2000, raycastParams); if not result or not result.Instance then return end; local targetModel = result.Instance:FindFirstAncestorOfClass("Model"); if not targetModel then return end; local targetHumanoid = targetModel:FindFirstChildOfClass("Humanoid"); if not targetHumanoid or targetHumanoid.Health <= 0 then return end; local targetPlayer = Players:GetPlayerFromCharacter(targetModel); if targetPlayer and checkTeam(targetPlayer) then return end; createBeam(origin, result.Position, Color3.fromRGB(255, 255, 100)) end
+    local function setupEquippedItemHook(clientFighter) if not clientFighter then return end; local currentShotConn; local function setItem(item) if currentShotConn then currentShotConn:Disconnect(); currentShotConn = nil end; if item and item.Shot then currentShotConn = item.Shot:Connect(function() tryShootTracer() end) end end; setItem(clientFighter.EquippedItem); if clientFighter.EquippedItemChanged then clientFighter.EquippedItemChanged:Connect(function(newItem) setItem(newItem) end) end end
+    pcall(function() local fighterController = require(LocalPlayer.PlayerScripts.Controllers.FighterController); local localFighter = fighterController:WaitForLocalFighter(); setupEquippedItemHook(localFighter) end)
+end)
+
+--// No Viewmodel
+local NoViewModelGroup = Tabs.Visual:AddRightGroupbox("No Viewmodel")
+NoViewModelGroup:AddToggle("NoViewmodel_Enabled", { Text = "No Viewmodel", Default = false })
+pcall(function()
+    local viewModelModule = LocalPlayer.PlayerScripts.Modules.ClientReplicatedClasses.ClientFighter.ClientItem:FindFirstChild("ClientViewModel")
+    if viewModelModule then
+        local ClientViewModel = require(viewModelModule)
+        if ClientViewModel and ClientViewModel.Update then
+            local originalUpdate = ClientViewModel.Update
+            ClientViewModel.Update = function(self, ...)
+                local result = originalUpdate(self, ...)
+                local weaponPlayer = self.ClientItem and self.ClientItem.ClientFighter and self.ClientItem.ClientFighter.Player
+                if weaponPlayer == LocalPlayer and self.Model then
+                    if Toggles.NoViewmodel_Enabled.Value then
+                        for _, obj in pairs(self.Model:GetDescendants()) do if obj:IsA("BasePart") then obj.Transparency = 1 elseif obj:IsA("Decal") or obj:IsA("Texture") then obj.Transparency = 1 elseif obj:IsA("Highlight") then obj:Destroy() elseif obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam") then obj.Enabled = false end end
+                        if self._highlight then self._highlight:Destroy(); self._highlight = nil end
+                    end
+                end
+                return result
+            end
+        end
+    end
+end)
+
+--//======================================================================================--
+--// 🌟 COMBAT: Main Combat 설정
+--//======================================================================================--
+local CombatGroup1 = Tabs.Combat:AddLeftGroupbox("Main Combat")
+CombatGroup1:AddToggle("KillCheck", { Text = "Kill Check", Default = true })
+CombatGroup1:AddToggle("Noclip", { Text = "Noclip", Default = false })
+Toggles.Noclip:OnChanged(function() if Toggles.Noclip.Value then EnableNoclip() else DisableNoclip() end end)
+
+--// Shoot Cancel
+local ShootCancelGroup = Tabs.Combat:AddLeftGroupbox("Shoot Cancel")
+ShootCancelGroup:AddToggle("ShootCancel_Enabled", { Text = "Shoot Cancel", Default = false })
+task.spawn(function()
+    local PlayerScripts = LocalPlayer.PlayerScripts
+    local success, clientItemModule = pcall(function() return require(PlayerScripts.Modules.ClientReplicatedClasses.ClientFighter.ClientItem) end)
+    if success and clientItemModule and clientItemModule.Input then
+        local originalInput = clientItemModule.Input
+        clientItemModule.Input = function(self, ...)
+            if Toggles.ShootCancel_Enabled.Value then
+                if self and type(self) == "table" and self.Info then
+                    self.Info.ShootRecoil = 0
+                    self.Info.ShootSpread = 0
+                    self.Info.ProjectileSpeed = 99999999
+                    self.Info.ShootCooldown = 0
+                    self.Info.QuickShotCooldown = 0
+                end
+            end
+            return originalInput(self, ...)
+        end
+    end
+end)
+
+--//======================================================================================--
+--// 🌟 COMBAT: Aimbot (Camera Lock)
+--//======================================================================================--
+local AimbotGroup = Tabs.Combat:AddRightGroupbox("Aimbot")
+AimbotGroup:AddToggle("Aimbot_Enabled", { Text = "Enable Aimbot", Default = false })
+AimbotGroup:AddToggle("Aimbot_WallCheck", { Text = "Wall Check", Default = true })
+AimbotGroup:AddToggle("Aimbot_ShowFOV", { Text = "Show FOV", Default = true })
+AimbotGroup:AddSlider("Aimbot_Smoothness", { Text = "Smoothness", Default = 50, Min = 1, Max = 100, Rounding = 0 })
+AimbotGroup:AddSlider("Aimbot_FOV", { Text = "FOV Size", Default = 250, Min = 50, Max = 2000, Rounding = 0 })
+
+local FOVCircle = Drawing.new("Circle"); FOVCircle.Thickness = 1; FOVCircle.NumSides = 64; FOVCircle.Radius = 125; FOVCircle.Filled = false; FOVCircle.Transparency = 0.7; FOVCircle.Color = Color3.fromRGB(255, 255, 255); FOVCircle.Visible = false
+local function isVisible(targetPart) local raycastParams = RaycastParams.new(); raycastParams.FilterDescendantsInstances = {LocalPlayer.Character}; raycastParams.FilterType = Enum.RaycastFilterType.Exclude; local raycastResult = workspace:Raycast(Camera.CFrame.Position, targetPart.Position - Camera.CFrame.Position, raycastParams); return raycastResult and raycastResult.Instance:IsDescendantOf(targetPart.Parent) end
+local function getBestTarget() local closestTarget = nil; local shortestDistance = math.huge; local centerScreen = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2); for _, player in pairs(Players:GetPlayers()) do if player ~= LocalPlayer and not isSameTeam(player) and player.Character and player.Character:FindFirstChild("Humanoid") then if Toggles.KillCheck.Value and PlayerIsDead(player) then continue end; local head = player.Character:FindFirstChild("Head"); if head and player.Character.Humanoid.Health > 0 then local screenPos, onScreen = Camera:WorldToViewportPoint(head.Position); if onScreen then local mouseDistance = (Vector2.new(screenPos.X, screenPos.Y) - centerScreen).Magnitude; if mouseDistance <= (Options.Aimbot_FOV.Value / 2) then if not Toggles.Aimbot_WallCheck.Value or isVisible(head) then if mouseDistance < shortestDistance then closestTarget = head; shortestDistance = mouseDistance end end end end end end end; return closestTarget end
+
+RunService:BindToRenderStep("LynoriaAimbot", Enum.RenderPriority.Camera.Value + 999, function()
+    FOVCircle.Position = Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2); FOVCircle.Radius = Options.Aimbot_FOV.Value / 2
+    FOVCircle.Visible = Toggles.Aimbot_Enabled.Value and Toggles.Aimbot_ShowFOV.Value
+    if Toggles.Aimbot_Enabled.Value then
+        local target = getBestTarget()
+        if target then 
+            FOVCircle.Color = Color3.fromRGB(255, 0, 0)
+            local targetCF = CFrame.new(Camera.CFrame.Position, target.Position)
+            local smoothness = Options.Aimbot_Smoothness.Value / 100
+            Camera.CFrame = Camera.CFrame:Lerp(targetCF, smoothness)
+        else FOVCircle.Color = Color3.fromRGB(255, 255, 255) end
+    end
+end)
+
+--//======================================================================================--
+--// 🌟 COMBAT: Knife Farm (대폭 수정됨)
+--//======================================================================================--
+local KnifeFarmGroup = Tabs.Combat:AddLeftGroupbox("Knife Farm")
+KnifeFarmGroup:AddToggle("KnifeFarm_Enabled", { Text = "Knife Farm", Default = false })
+Toggles.KnifeFarm_Enabled:OnChanged(UpdateCsyncState)
+
+task.spawn(function()
+    while true do
+        task.wait(0.05)
+        if not Toggles.KnifeFarm_Enabled.Value then continue end
+        local target = GetClosestTarget()
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            local head = target.Character:FindFirstChild("Head")
+            if hrp and head then
+                local backPos = hrp.Position - (hrp.CFrame.LookVector * 3)
+                local fakeCF = CFrame.new(backPos, hrp.Position)
+                _csyncFakeCF = fakeCF
+                local c = LocalPlayer.Character; local h = c and c:FindFirstChild("HumanoidRootPart")
+                if h then h.CFrame = fakeCF end
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, head.Position)
+                task.wait(0.1)
+                _csyncFakeCF = nil
+            end
+        else _csyncFakeCF = nil end
+    end
+end)
+
+--//======================================================================================--
+--// 🌟 COMBAT: Auto Tp
+--//======================================================================================--
+local AutoTpGroup = Tabs.Combat:AddLeftGroupbox("Auto Tp")
+AutoTpGroup:AddToggle("AutoTp_Enabled", { Text = "Auto Tp", Default = false })
+Toggles.AutoTp_Enabled:OnChanged(UpdateCsyncState)
+
+task.spawn(function()
+    while true do
+        task.wait(1)
+        if not Toggles.AutoTp_Enabled.Value then continue end
+        local target = GetClosestTarget()
+        if target and target.Character then
+            local hrp = target.Character:FindFirstChild("HumanoidRootPart")
+            if hrp then
+                local backPos = hrp.Position - (hrp.CFrame.LookVector * 3)
+                _csyncFakeCF = CFrame.new(backPos, hrp.Position)
+                local c = LocalPlayer.Character; local h = c and c:FindFirstChild("HumanoidRootPart")
+                if h then h.CFrame = _csyncFakeCF end
+                task.wait(0.2); _csyncFakeCF = nil
+            end
+        else _csyncFakeCF = nil end
+    end
+end)
+
+--//======================================================================================--
+--// 🌟 COMBAT: Auto Collect
+--//======================================================================================--
+local AutoCollectGroup = Tabs.Combat:AddLeftGroupbox("Auto Collect")
+AutoCollectGroup:AddToggle("AutoCollect_Enabled", { Text = "Auto Collect", Default = false })
+task.spawn(function()
+    while true do
+        task.wait(0.5)
+        if not Toggles.AutoCollect_Enabled.Value then continue end
+        local char = LocalPlayer.Character; local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then for _, obj in ipairs(Workspace:GetDescendants()) do if obj:IsA("ProximityPrompt") then local mag = (obj.Parent.Position - hrp.Position).Magnitude if mag < 30 then fireproximityprompt(obj) end end end end
+    end
+end)
+
+--//======================================================================================--
+--// 🌟 COMBAT: Silent Aim & Wall Bang
+--//======================================================================================--
+local SilentAimGroup = Tabs.Combat:AddLeftGroupbox("Silent Aim & Wall Bang")
+SilentAimGroup:AddToggle("SilentAim_Enabled", { Text = "Silent Aim", Default = false })
+SilentAimGroup:AddToggle("WallBang_Enabled", { Text = "Wall Bang", Default = false })
+
+task.spawn(function()
+    local rs = cloneref(game:GetService("ReplicatedStorage"))
+    local players = cloneref(game:GetService("Players"))
+    local workspace = cloneref(game:GetService("Workspace"))
+    local runservice = cloneref(game:GetService("RunService"))
+    local lplr = players.LocalPlayer
+    local util = require(rs.Modules.Utility)
+    local enums = require(rs.Modules.EnumLibrary)
+    local fighterCtrl = require(lplr.PlayerScripts.Controllers.FighterController)
+    local ray_params = RaycastParams.new()
+
+    local function get_closest()
+        if not lplr.Character or not lplr.Character:FindFirstChild("HumanoidRootPart") then return nil, nil end
+        local target, char, dist = nil, nil, math.huge
+        for _, v in next, players:GetPlayers() do
+            if v ~= lplr and v.Character and v.Character:FindFirstChild("Head") and not isSameTeam(v) then
+                if Toggles.KillCheck.Value and PlayerIsDead(v) then continue end
+                local mag = (lplr.Character.HumanoidRootPart.Position - v.Character.Head.Position).Magnitude
+                if mag < dist then dist = mag; target = v.Character.Head; char = v.Character end
+            end
+        end
+        return target, char
+    end
+
+    local function can_see(origin, target_pos, target_char)
+        ray_params.FilterDescendantsInstances = {lplr.Character, target_char}
+        ray_params.FilterType = Enum.RaycastFilterType.Exclude
+        return not workspace:Raycast(origin, target_pos - origin, ray_params)
+    end
+
+    runservice.Heartbeat:Connect(function()
+        if not Toggles.SilentAim_Enabled.Value then return end
+        if not lplr.Character then return end
+        local root = lplr.Character:FindFirstChild("HumanoidRootPart")
+        if not root then return end
+        if not fighterCtrl or not fighterCtrl.LocalFighter then return end
+        local item = fighterCtrl.LocalFighter.EquippedItem
+        if not item then return end
+        local target_part, target_char = get_closest()
+        if not target_part or not target_char then return end
+        local cam_pos = workspace.CurrentCamera.CFrame.Position
+        if not can_see(cam_pos, target_part.Position, target_char) then return end
+
+        local cameradata = {}
+        cameradata[utf8.char(1)] = {
+            [utf8.char(0)] = util:EncodeCFrame(workspace.CurrentCamera.CFrame),
+            [utf8.char(1)] = util:EncodeCFrame(CFrame.lookAt(cam_pos, target_part.Position)),
+            [utf8.char(2)] = target_part,
+            [utf8.char(3)] = util:EncodeCFrame(target_part.CFrame:ToObjectSpace(CFrame.new(target_part.Position)))
+        }
+        rs.Remotes.Replication.Fighter.UseItem:FireServer(item:Get("ObjectID"), enums:ToEnum("StartShooting"), cameradata, nil)
+    end)
+end)
+
+-- Wall Bang
+task.spawn(function()
+    local LP = LocalPlayer
+    if _G.RIVALS_WALLBANG and _G.RIVALS_WALLBANG.Loaded then local connKeys = { 'HeartbeatConnection', 'InputBeganConnection', 'InputEndedConnection', 'EnemyAddedConnection', 'EnemyRemovedConnection', 'FighterAddedConnection', 'FighterRemovedConnection' }; for _, key in ipairs(connKeys) do local conn = _G.RIVALS_WALLBANG[key]; if conn then pcall(function() conn:Disconnect() end); _G.RIVALS_WALLBANG[key] = nil end end end
+    _G.RIVALS_WALLBANG = { Loaded = true, Enabled = false, Verbose = false, RequireMouseHeld = true, AcceptRightMouse = true, ShotInterval = 0.05, SearchRadius = 9.5, AimAtPart = 'Head', MeleeAttackMaxStuds = 15, LastShotAt = 0, PrintEvery = 60, SkipCounter = {}, LeftMouseHeld = false, RightMouseHeld = false, TrackedFighters = {}, TrackedEnemies = {}, EnemyControllerHooked = false, FighterControllerHooked = false }
+    local STATE = _G.RIVALS_WALLBANG
+    local cachedEnumLib, cachedFighter, cachedRemote, cachedEnum = nil, nil, nil, nil
+    local function getEnumLib() if cachedEnumLib then return cachedEnumLib end; local modules = RS:FindFirstChild('Modules'); local moduleScript = modules and modules:FindFirstChild('EnumLibrary'); if not moduleScript then return nil end; local ok, lib = pcall(require, moduleScript); if ok then cachedEnumLib = lib end; return cachedEnumLib end
+    local function getFighterController() if cachedFighter then return cachedFighter end; local ps = LP:FindFirstChild('PlayerScripts'); local controllers = ps and ps:FindFirstChild('Controllers'); local moduleScript = controllers and controllers:FindFirstChild('FighterController'); if not moduleScript then return nil end; local ok, fc = pcall(require, moduleScript); if ok then cachedFighter = fc end; return cachedFighter end
+    local cachedEnemyController = nil
+    local function getEnemyController() if cachedEnemyController then return cachedEnemyController end; local ps = LP:FindFirstChild('PlayerScripts'); local controllers = ps and ps:FindFirstChild('Controllers'); local moduleScript = controllers and controllers:FindFirstChild('EnemyController'); if not moduleScript then return nil end; local ok, ec = pcall(require, moduleScript); if ok then cachedEnemyController = ec end; return cachedEnemyController end
+    local function getUseItemRemote() if cachedRemote and cachedRemote.Parent then return cachedRemote end; local remotes = RS:FindFirstChild('Remotes'); local replication = remotes and remotes:FindFirstChild('Replication'); local fighter = replication and replication:FindFirstChild('Fighter'); local remote = fighter and fighter:FindFirstChild('UseItem'); if remote and remote:IsA('RemoteEvent') then cachedRemote = remote end; return cachedRemote end
+    local function getStartShootingEnum() if cachedEnum ~= nil then return cachedEnum end; local enums = getEnumLib(); if not enums or type(enums.ToEnum) ~= 'function' then return nil end; local ok, enumValue = pcall(enums.ToEnum, enums, 'StartShooting'); if ok and enumValue ~= nil then cachedEnum = enumValue end; return cachedEnum end
+    local function getLocalFighter() local fc = getFighterController(); if not fc then return nil end; if fc.LocalFighter then return fc.LocalFighter end; if type(fc.GetFighter) == 'function' then local ok, f = pcall(fc.GetFighter, fc, LP); if ok and f then return f end; if LP.Character then local ok2, f2 = pcall(fc.GetFighter, fc, LP.Character); if ok2 and f2 then return f2 end end end; return nil end
+    local function readItemValue(item, key) if not item then return nil end; if type(item.Get) == 'function' then local ok, v = pcall(item.Get, item, key); if ok and v ~= nil then return v end end; if type(item.Data) == 'table' then return item.Data[key] end; return nil end
+    local function isMeleeItem(item) local info = item and item.Info; if not info then return false end; return info.Class == 'Melee' or info.Type == 'Melee' end
+    local DUMMY_MODEL_NAMES = { ['Dummy'] = true, ['DPS Dummy'] = true, ['Target'] = true }
+    local function resolveDummyAimPart(model) local head = model:FindFirstChild('Head'); if head and head:IsA('BasePart') then return head end; if model.PrimaryPart then return model.PrimaryPart end; for _, child in ipairs(model:GetChildren()) do if child:IsA('BasePart') then return child end end; return nil end
+    local function registerFighter(fighter) local player = fighter and fighter.Player; if not player or player == LP then return end; STATE.TrackedFighters[player] = fighter end
+    local function unregisterFighter(fighter) local player = fighter and fighter.Player; if not player then return end; if STATE.TrackedFighters[player] == fighter then STATE.TrackedFighters[player] = nil end end
+    local function registerEnemy(enemy) local model = enemy and enemy.Model; if not model or not DUMMY_MODEL_NAMES[model.Name] then return end; STATE.TrackedEnemies[enemy] = { model = model, aimPart = resolveDummyAimPart(model) } end
+    local function unregisterEnemy(enemy) STATE.TrackedEnemies[enemy] = nil end
+    local function ensureTargetTracking() if not STATE.FighterControllerHooked then local fc = getFighterController(); if fc then for _, fighter in ipairs(fc.Objects or {}) do registerFighter(fighter) end; if fc.ObjectAdded and type(fc.ObjectAdded.Connect) == 'function' then STATE.FighterAddedConnection = fc.ObjectAdded:Connect(registerFighter) end; if fc.ObjectRemoved and type(fc.ObjectRemoved.Connect) == 'function' then STATE.FighterRemovedConnection = fc.ObjectRemoved:Connect(unregisterFighter) end; STATE.FighterControllerHooked = true end end; if not STATE.EnemyControllerHooked then local ec = getEnemyController(); if ec then for _, enemy in ipairs(ec.Objects or {}) do registerEnemy(enemy) end; if ec.ObjectAdded and type(ec.ObjectAdded.Connect) == 'function' then STATE.EnemyAddedConnection = ec.ObjectAdded:Connect(registerEnemy) end; if ec.ObjectRemoved and type(ec.ObjectRemoved.Connect) == 'function' then STATE.EnemyRemovedConnection = ec.ObjectRemoved:Connect(unregisterEnemy) end; STATE.EnemyControllerHooked = true end end end
+    local function pickTarget() local myChar = LP.Character; local myRoot = myChar and myChar:FindFirstChild('HumanoidRootPart'); if not myRoot then return nil, 'no local HumanoidRootPart' end; local best, bestDist = nil, math.huge; for player, _ in pairs(STATE.TrackedFighters) do local char = player.Character; local part = char and char:FindFirstChild(STATE.AimAtPart); if part then local d = (myRoot.Position - part.Position).Magnitude; if d < bestDist then best, bestDist = part, d end end end; for enemy, tracked in pairs(STATE.TrackedEnemies) do local part = tracked.aimPart; if not part or not part.Parent then part = resolveDummyAimPart(tracked.model); tracked.aimPart = part end; if part and tracked.model.Parent then local d = (myRoot.Position - part.Position).Magnitude; if d < bestDist then best, bestDist = part, d end end end; if not best then return nil, 'no target' end; return best end
+    local function buildRaycastParams(targetSubject) local rp = RaycastParams.new(); rp.FilterType = Enum.RaycastFilterType.Exclude; rp.IgnoreWater = true; rp.FilterDescendantsInstances = { LP.Character, targetSubject }; return rp end
+    local function buildShotData(originPos, targetPart, targetPos) local lookCF = CFrame.lookAt(originPos, targetPos); local lX, lY, lZ = lookCF:ToOrientation(); local originStruct = { [utf8.char(0)] = originPos.X, [utf8.char(1)] = originPos.Y, [utf8.char(2)] = originPos.Z, [utf8.char(3)] = lX, [utf8.char(4)] = lY, [utf8.char(5)] = lZ }; local relCF = targetPart.CFrame:ToObjectSpace(CFrame.new(targetPos)); local rX, rY, rZ = relCF:ToOrientation(); return { [utf8.char(1)] = { [utf8.char(0)] = originStruct, [utf8.char(1)] = originStruct, [utf8.char(2)] = targetPart, [utf8.char(3)] = { [utf8.char(0)] = relCF.X, [utf8.char(1)] = relCF.Y, [utf8.char(2)] = relCF.Z, [utf8.char(3)] = rX, [utf8.char(4)] = rY, [utf8.char(5)] = rZ } } } end
+    local function isShootInputHeld() if STATE.LeftMouseHeld then return true end; if STATE.AcceptRightMouse and STATE.RightMouseHeld then return true end; return false end
+    local function tryFireWallbangShot() local now = tick(); if STATE.RequireMouseHeld and not isShootInputHeld() then return false end; if (now - STATE.LastShotAt) < STATE.ShotInterval then return false end; local fighter = getLocalFighter(); if not fighter then return false, 'no LocalFighter' end; local item = fighter.EquippedItem; if not item then return false, 'no equipped item' end; local melee = isMeleeItem(item); if not melee then local ammo = readItemValue(item, 'Ammo'); if type(ammo) == 'number' and ammo <= 0 then return false, 'out of ammo' end end; if type(item._shoot_cooldown) == 'number' and now < item._shoot_cooldown then return false end; local targetPart, targetErr = pickTarget(); if not targetPart then return false, targetErr end; if melee then local myChar = LP.Character; local myHrp = myChar and myChar:FindFirstChild('HumanoidRootPart'); if myHrp then local dist = (myHrp.Position - targetPart.Position).Magnitude; if dist > STATE.MeleeAttackMaxStuds then return false end end end; local cam = Workspace.CurrentCamera; if not cam then return false, 'no camera' end; local origin = cam.CFrame.Position; local objectId = readItemValue(item, 'ObjectID'); if not objectId then return false, 'no ObjectID on item' end; local startShootingEnum = getStartShootingEnum(); if startShootingEnum == nil then return false, 'StartShooting enum not ready' end; local remote = getUseItemRemote(); if not remote then return false, 'UseItem remote not found' end; local shotData = buildShotData(origin, targetPart, targetPart.Position); remote:FireServer(objectId, startShootingEnum, shotData, nil); STATE.LastShotAt = now; return true, 'FIRED' end
+
+    STATE.InputBeganConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed) if gameProcessed then return end; if input.UserInputType == Enum.UserInputType.MouseButton1 then STATE.LeftMouseHeld = true elseif input.UserInputType == Enum.UserInputType.MouseButton2 then STATE.RightMouseHeld = true end end)
+    STATE.InputEndedConnection = UserInputService.InputEnded:Connect(function(input) if input.UserInputType == Enum.UserInputType.MouseButton1 then STATE.LeftMouseHeld = false elseif input.UserInputType == Enum.UserInputType.MouseButton2 then STATE.RightMouseHeld = false end end)
+    STATE.HeartbeatConnection = RunService.Heartbeat:Connect(function()
+        if not (_G.RIVALS_WALLBANG and _G.RIVALS_WALLBANG.Enabled) then return end
+        if not (STATE.EnemyControllerHooked and STATE.FighterControllerHooked) then ensureTargetTracking() end
+        pcall(tryFireWallbangShot)
+    end)
+end)
+
+Toggles.WallBang_Enabled:OnChanged(function()
+    if _G.RIVALS_WALLBANG then _G.RIVALS_WALLBANG.Enabled = Toggles.WallBang_Enabled.Value end
+end)
+
+--//======================================================================================--
+--// 🌟 COMBAT: RageBot (Orbit 속도 33, 거리 5, 높이 300)
+--//======================================================================================--
+local RageBotGroup = Tabs.Combat:AddLeftGroupbox("RageBot")
+RageBotGroup:AddToggle("RageBot_Enabled", { Text = "RageBot", Default = false })
+RageBotGroup:AddDropdown("RageBot_TargetMode", { Values = { "Closest", "Lowest Health" }, Default = 1, Text = "Target Mode" })
+RageBotGroup:AddToggle("RageBot_AutoSwap", { Text = "Auto Swap", Default = true })
+RageBotGroup:AddSlider("RageBot_HyperMode", { Text = "Hyper Mode (Sec)", Default = 0, Min = 0, Max = 0.5, Rounding = 2 })
+
+Toggles.RageBot_Enabled:OnChanged(UpdateCsyncState)
+
+local _rbActive = false
+local _rbTarget = nil
+local _rbConn = nil
+local _orbitAngle = math.random() * (math.pi * 2)
+
+-- 탄착 조작을 위한 모듈 로드
+local rb_util = nil
+local rb_enums = nil
+pcall(function() 
+    rb_util = require(RS.Modules.Utility) 
+    rb_enums = require(RS.Modules.EnumLibrary)
+end)
+
+local function RB_PressKey(kc) VIM:SendKeyEvent(true, kc, false, game); task.wait(0.03); VIM:SendKeyEvent(false, kc, false, game) end
+
+local function RB_GetBestTarget()
+    local lc = LocalPlayer.Character; local lhrp = lc and lc:FindFirstChild("HumanoidRootPart"); if not lhrp then return nil end
+    local best, bestV = nil, math.huge; local useHP = Options.RageBot_TargetMode.Value == "Lowest Health"
+    for _, p in Players:GetPlayers() do
+        if p == LocalPlayer or isSameTeam(p) or not p.Character then continue end
+        if Toggles.KillCheck.Value and PlayerIsDead(p) then continue end
+        local c = p.Character; local hrp = c:FindFirstChild("HumanoidRootPart"); local hum = c:FindFirstChild("Humanoid")
+        if not hrp or not hum or hum.Health <= 0 then continue end
+        local val = useHP and hum.Health or (hrp.Position - lhrp.Position).Magnitude
+        if val < bestV then bestV = val; best = p end
+    end
+    return best
+end
+
+local FighterCtrl = nil
+local function RB_GetFighter()
+    if not FighterCtrl then pcall(function() FighterCtrl = require(LocalPlayer.PlayerScripts.Controllers.FighterController) end) end
+    if FighterCtrl and FighterCtrl.LocalFighter then return FighterCtrl.LocalFighter end
+    return nil
+end
+
+-- 총알이 무조건 적 머리에 맞도록 서버에 데이터 조작 (사일런트 에임 방식)
+local function RB_DoFire(thead)
+    local f = RB_GetFighter()
+    local i = f and f.EquippedItem
+    if not f or not i then return end
+
+    local oid = i:Get("ObjectID")
+    local se = rb_enums and rb_enums:ToEnum("StartShooting")
+    
+    if not oid or not se or not rb_util then 
+        pcall(function() i:UseItem() end) 
+        return 
+    end
+
+    local cam_pos = Camera.CFrame.Position
+    local targetCF = CFrame.lookAt(cam_pos, thead.Position)
+    
+    local cameradata = {}
+    cameradata[utf8.char(1)] = {
+        [utf8.char(0)] = rb_util:EncodeCFrame(Camera.CFrame),
+        [utf8.char(1)] = rb_util:EncodeCFrame(targetCF),
+        [utf8.char(2)] = thead,
+        [utf8.char(3)] = rb_util:EncodeCFrame(thead.CFrame:ToObjectSpace(CFrame.new(thead.Position)))
+    }
+
+    pcall(function()
+        RS.Remotes.Replication.Fighter.UseItem:FireServer(oid, se, cameradata, nil)
+    end)
+end
+
+local function RB_HandleAmmo()
+    local fighter = RB_GetFighter(); local item = fighter and fighter.EquippedItem
+    if not fighter or not item then return false end
+    local ammo = item:Get("Ammo") or 0; local slot = item:Get("Slot") or 1
+    if fighter:Get("Reloading") then return true end
+    if ammo > 0 then return false end
+    if Toggles.RageBot_AutoSwap.Value and slot == 1 then RB_PressKey(Enum.KeyCode.Two); return true end
+    return true
+end
+
+function StartRageBot()
+    if _rbActive then return end
+    _rbActive = true; _rbTarget = nil; _orbitAngle = math.random() * (math.pi * 2)
+    EnableNoclip(); StartCsync()
+
+    _rbConn = RunService.Stepped:Connect(function(_, dt)
+        if not _rbActive or not Toggles.RageBot_Enabled.Value then StopRageBot(); return end
+        local lc = LocalPlayer.Character; local lhrp = lc and lc:FindFirstChild("HumanoidRootPart")
+        if not lhrp then return end
+
+        if not _rbTarget or PlayerIsDead(_rbTarget) then _rbTarget = RB_GetBestTarget() end
+        if not _rbTarget then _csyncFakeCF = nil; return end
+
+        local tc = _rbTarget.Character; local tr = tc and tc:FindFirstChild("HumanoidRootPart"); local thead = tc and (tc:FindFirstChild("Head") or tr)
+        if not tr or not thead then _rbTarget = nil; return end
+
+        -- Orbit 속도 33, 거리 5, 높이 300
+        _orbitAngle = _orbitAngle + dt * 33 * 1.5
+        local targetPos = thead.Position + Vector3.new(math.cos(_orbitAngle) * 5, 300, math.sin(_orbitAngle) * 5)
+        local faceCF = CFrame.new(targetPos, thead.Position)
+        
+        _csyncFakeCF = faceCF
+        _csyncFakeLV = (targetPos - lhrp.Position) / dt
+
+        if not RB_HandleAmmo() and not PlayerIsDead(_rbTarget) then
+            RB_DoFire(thead)
+        end
+    end)
+end
+
+function StopRageBot()
+    if not _rbActive then return end
+    _rbActive = false; if _rbConn then _rbConn:Disconnect(); _rbConn = nil end
+    _rbTarget = nil; _csyncFakeCF = nil; StopCsync(); DisableNoclip()
+end
+
+Toggles.RageBot_Enabled:OnChanged(function()
+    if Toggles.RageBot_Enabled.Value then StartRageBot() else StopRageBot() end
+end)
+
+--//======================================================================================--
+--// 🌟 SETTING: UI 설정 및 관리
+--//======================================================================================--
+local MenuGroup = Tabs.Setting:AddLeftGroupbox("Menu Settings")
+MenuGroup:AddToggle("KeybindMenuOpen", { Default = Library.KeybindFrame.Visible, Text = "Open Keybind Menu", Callback = function(value) Library.KeybindFrame.Visible = value end})
+MenuGroup:AddToggle("ShowCustomCursor", {Text = "Custom Cursor", Default = true, Callback = function(Value) Library.ShowCustomCursor = Value end})
+MenuGroup:AddDivider()
+MenuGroup:AddLabel("Menu bind"):AddKeyPicker("MenuKeybind", { Default = "RightShift", NoUI = true, Text = "Menu keybind" })
+MenuGroup:AddButton("Unload", function() Library:Unload() end)
+Library.ToggleKeybind = Options.MenuKeybind 
+
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({ "MenuKeybind" })
+ThemeManager:SetFolder("Lynoria")
+SaveManager:SetFolder("Lynoria/Rivals")
+SaveManager:BuildConfigSection(Tabs.Setting)
+ThemeManager:ApplyToTab(Tabs.Setting)
+SaveManager:LoadAutoloadConfig()
